@@ -12,12 +12,13 @@ import os
 import re
 import logging
 import optparse
+import datetime
 import dateutil.parser
 
 import pywikibot
 from pywikibot.pagegenerators import XMLDumpOldPageGenerator
 
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
+from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
@@ -30,11 +31,13 @@ class Page(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, unique=True)
     text = Column(String)
+    ns = Column(String)
     # Use default=func.now() to set the default hiring time
     # of an Employee to be the current time when an
     # Employee record was created
     timestamp = Column(DateTime)
     last_update = Column(DateTime, default=func.now())
+    is_redirect = Column(Boolean, default=False)
 
 def read_dump(dump_path, sqlite_path):
     # First, create SQLite DB
@@ -51,6 +54,10 @@ def read_dump(dump_path, sqlite_path):
             n_pages += 1
         except StopIteration:
             break
+        if n_pages % 50000 == 0:
+            pywikibot.output( u'%d pages' % n_pages )
+            db.commit()
+    db.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 
 def create_db(sqlite_path):
@@ -63,24 +70,23 @@ def create_db(sqlite_path):
 
 def page_to_db(db, page_data, from_zero):
     time = dateutil.parser.parse(page_data.timestamp)
+    last_update=datetime.datetime.now()
+    time = time.replace(tzinfo=last_update.tzinfo)
     text = page_data.text
     text.strip()
-    new_page = Page(title=page_data.title, text=text, timestamp=time, last_update=func.now())
-    
+    new_page = Page(
+            id=page_data.id,
+            title=page_data.title,
+            is_redirect=page_data.isredirect,
+            text=text,
+            ns=page_data.ns,
+            timestamp=time,
+            last_update=last_update
+            )
     if from_zero:
         db.add(new_page)
     else:
-        # Update or insert
-        result = db.query(Page).filter(Page.title == new_page.title)
-        if result:
-            old_page = result.one()
-            old_page.text = new_page.text
-            new_page.timestamp = new_page.timestamp.replace(tzinfo=old_page.timestamp.tzinfo)
-            old_page.timestamp = new_page.timestamp
-            old_page.last_update = new_page.last_update
-        else:
-            db.add(new_page)
-    db.commit()
+        db.merge(new_page)
 
 def main(*args):
     """
