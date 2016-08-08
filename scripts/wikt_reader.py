@@ -28,14 +28,14 @@ from sqlalchemy import exc
 Base = declarative_base()
 class Page(Base):
     __tablename__ = 'page'
-    id = Column(Integer, primary_key=True)
+    id    = Column(Integer, primary_key=True)
     title = Column(String, unique=True)
-    text = Column(String)
-    ns = Column(String)
+    text  = Column(String)
+    ns    = Column(String)
     # Use default=func.now() to set the default hiring time
     # of an Employee to be the current time when an
     # Employee record was created
-    timestamp = Column(DateTime)
+    timestamp   = Column(DateTime)
     last_update = Column(DateTime, default=func.now())
     is_redirect = Column(Boolean, default=False)
 
@@ -46,6 +46,8 @@ def read_dump(dump_path, sqlite_path):
     
     # Then, parse the data and import in the DB
     xml = XMLDumpOldPageGenerator(dump_path)
+    
+    # Store pages
     n_pages = 0
     while True:
         try:
@@ -54,14 +56,14 @@ def read_dump(dump_path, sqlite_path):
             n_pages += 1
         except StopIteration:
             break
-        if n_pages % 50000 == 0:
+        if n_pages % 100000 == 0:
             pywikibot.output( u'%d pages' % n_pages )
             db.commit()
     db.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 
 def create_db(sqlite_path):
-    engine = create_engine('sqlite:///' + sqlite_path)
+    engine  = create_engine('sqlite:///' + sqlite_path)
     session = sessionmaker()
     session.configure(bind=engine)
     Base.metadata.create_all(engine)
@@ -69,19 +71,19 @@ def create_db(sqlite_path):
     return s
 
 def page_to_db(db, page_data, from_zero):
-    time = dateutil.parser.parse(page_data.timestamp)
-    last_update=datetime.datetime.now()
-    time = time.replace(tzinfo=last_update.tzinfo)
-    text = page_data.text
+    time        = dateutil.parser.parse(page_data.timestamp)
+    last_update = datetime.datetime.now()
+    time        = time.replace(tzinfo=last_update.tzinfo)
+    text        = page_data.text
     text.strip()
     new_page = Page(
-            id=page_data.id,
-            title=page_data.title,
-            is_redirect=page_data.isredirect,
-            text=text,
-            ns=page_data.ns,
-            timestamp=time,
-            last_update=last_update
+            id          = page_data.id,
+            title       = page_data.title,
+            is_redirect = page_data.isredirect,
+            text        = text,
+            ns          = page_data.ns,
+            timestamp   = time,
+            last_update = last_update
             )
     if from_zero:
         db.add(new_page)
