@@ -17,6 +17,8 @@ import dateutil.parser
 
 import pywikibot
 from pywikibot.pagegenerators import XMLDumpOldPageGenerator
+from pywikibot.xmlreader import XmlDump
+from pywikibot.wiktionary_page import WiktArticle
 
 from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
 from sqlalchemy import create_engine
@@ -46,13 +48,20 @@ def read_dump(dump_path, sqlite_path):
     
     # Then, parse the data and import in the DB
     xml = XMLDumpOldPageGenerator(dump_path)
+    dump = XmlDump(dump_path)
+    dump.parse_siteinfo()
     
     # Store pages
     n_pages = 0
     while True:
         try:
             page = next(xml.parser)
-            page_to_db(db, page, from_zero)
+            page_to_db(
+                    db        = db,
+                    page      = page,
+                    from_zero = from_zero,
+                    language  = dump.siteinfo['lang']
+                    )
             n_pages += 1
         except StopIteration:
             break
@@ -70,18 +79,19 @@ def create_db(sqlite_path):
     s = session()
     return s
 
-def page_to_db(db, page_data, from_zero):
-    time        = dateutil.parser.parse(page_data.timestamp)
+def page_to_db(db, page, from_zero, language):
+    time        = dateutil.parser.parse(page.timestamp)
     last_update = datetime.datetime.now()
     time        = time.replace(tzinfo=last_update.tzinfo)
-    text        = page_data.text
+    text        = page.text
     text.strip()
+    wikt_lang   = page
     new_page = Page(
-            id          = page_data.id,
-            title       = page_data.title,
-            is_redirect = page_data.isredirect,
+            id          = page.id,
+            title       = page.title,
+            is_redirect = page.isredirect,
             text        = text,
-            ns          = page_data.ns,
+            ns          = page.ns,
             timestamp   = time,
             last_update = last_update
             )
@@ -89,6 +99,13 @@ def page_to_db(db, page_data, from_zero):
         db.add(new_page)
     else:
         db.merge(new_page)
+    
+    # Create an article
+    art = WiktArticle(
+            title = page.title,
+            text  = page.text,
+            lang  = language
+            )
 
 def main(*args):
     """

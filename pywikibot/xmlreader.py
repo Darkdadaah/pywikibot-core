@@ -136,6 +136,37 @@ class XmlDump(object):
                     continue
                 for rev in self._parse(event, elem):
                     yield rev
+    
+    def parse_siteinfo(self):
+        """Parse the siteinfo at the start of the file."""
+        with open_archive(self.filename) as source:
+            # iterparse's event must be a str but they are unicode with
+            # unicode_literals in Python 2
+            context = iterparse(source, events=(str('start'), str('end'),
+                                                str('start-ns')))
+            self.root = None
+            for event, elem in context:
+                if event == "start-ns" and elem[0] == "":
+                    self.uri = elem[1]
+                    continue
+                if event == "start" and self.root is None:
+                    self.root = elem
+                    continue
+                siteinfo = self._parse_siteinfo(event, elem)
+                if siteinfo and len(siteinfo) > 0:
+                    self.siteinfo = siteinfo
+                    break
+    
+    def _parse_siteinfo(self, event, elem):
+        """Parser that reads all the siteinfo."""
+        if event == "end" and elem.tag == "{%s}siteinfo" % self.uri:
+            siteinfo = {}
+            siteinfo['sitename'] = elem.find("{%s}sitename" % self.uri).text
+            siteinfo['dbname']   = elem.find("{%s}dbname" % self.uri).text
+            siteinfo['lang']     = siteinfo['dbname']
+            elem.clear()
+            self.root.clear()
+            return siteinfo
 
     def _parse_only_latest(self, event, elem):
         """Parser that yields only the latest revision."""
