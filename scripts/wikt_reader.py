@@ -129,7 +129,7 @@ def main(*args):
     if dump and sqlite:
         read_dump(dump, sqlite)
     else:
-        pywikibot.warning(u'No dump/sqlite file provided')
+        pywikibot.warning(u'Need -dump and -sqlite to proceed')
 
 if __name__ == "__main__":
     main()
