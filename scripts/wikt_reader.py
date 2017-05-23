@@ -18,38 +18,44 @@ import dateutil.parser
 import pywikibot
 from pywikibot.pagegenerators import XMLDumpOldPageGenerator
 from pywikibot.xmlreader import XmlDump
-from pywikibot.wiktionary_page import WiktArticle
+from pywikibot.wiktionary_page_fr import WiktArticle
 
-from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
 from sqlalchemy import create_engine
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import exc
+from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
-class Page(Base):
-    __tablename__ = 'page'
+class Meta(Base):
+    __tablename__ = 'meta'
     id    = Column(Integer, primary_key=True)
-    title = Column(String, unique=True)
-    text  = Column(String)
-    ns    = Column(String)
-    # Use default=func.now() to set the default hiring time
-    # of an Employee to be the current time when an
-    # Employee record was created
+    name  = Column(String, unique=True)
     timestamp   = Column(DateTime)
-    last_update = Column(DateTime, default=func.now())
-    is_redirect = Column(Boolean, default=False)
+
+def create_db(sqlite_path):
+    engine  = create_engine('sqlite:///' + sqlite_path)
+    session = sessionmaker()
+    session.configure(bind=engine)
+    Base.metadata.create_all(engine)
+    s = session()
+    return s
 
 def read_dump(dump_path, sqlite_path):
-    # First, create SQLite DB
-    db = create_db(sqlite_path)
-    from_zero = (db.query(Page).count() == 0)
-    
-    # Then, parse the data and import in the DB
+    # Parse the data
     xml = XMLDumpOldPageGenerator(dump_path)
     dump = XmlDump(dump_path)
     dump.parse_siteinfo()
+    language = dump.siteinfo['lang']
+    if language == 'frwiktionary':
+        from pywikibot.wiktionary_page_fr import WiktArticle
+    else:
+        raise ValueError("Language %s is not supported" % language)
+    
+    # Then create the SQLite DB
+    db = create_db(sqlite_path)
+    from_zero = (db.query(Meta).count() == 0)
     
     # Store pages
     n_pages = 0
@@ -60,7 +66,7 @@ def read_dump(dump_path, sqlite_path):
                     db        = db,
                     page      = page,
                     from_zero = from_zero,
-                    language  = dump.siteinfo['lang']
+                    language  = language
                     )
             n_pages += 1
         except StopIteration:
@@ -71,41 +77,24 @@ def read_dump(dump_path, sqlite_path):
     db.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 
-def create_db(sqlite_path):
-    engine  = create_engine('sqlite:///' + sqlite_path)
-    session = sessionmaker()
-    session.configure(bind=engine)
-    Base.metadata.create_all(engine)
-    s = session()
-    return s
-
 def page_to_db(db, page, from_zero, language):
-    time        = dateutil.parser.parse(page.timestamp)
-    last_update = datetime.datetime.now()
-    time        = time.replace(tzinfo=last_update.tzinfo)
-    text        = page.text
-    text.strip()
-    wikt_lang   = page
-    new_page = Page(
-            id          = page.id,
-            title       = page.title,
-            is_redirect = page.isredirect,
-            text        = text,
-            ns          = page.ns,
-            timestamp   = time,
-            last_update = last_update
-            )
-    if from_zero:
-        db.add(new_page)
-    else:
-        db.merge(new_page)
-    
     # Create an article
-    art = WiktArticle(
-            title = page.title,
-            text  = page.text,
-            lang  = language
-            )
+    if page.ns == "0" and page.isredirect == False:
+        text        = page.text
+        text.strip()
+    
+        art = WiktArticle(
+                title = page.title,
+                text  = page.text,
+                lang  = language
+                )
+        
+        # Store the article
+        #art.add_to_db(db, from_zero);
+        art.tag_sections();
+        art.print_sections();
+    #else:
+    #    raise Exception("The end %s" % (page.title));
 
 def main(*args):
     """
