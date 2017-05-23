@@ -50,3 +50,13 @@ class WiktArticleCommon(WikiArticle):
         for sub_section in section.sub_sections:
             self.rec_tag_sections(sub_section)
     
+    def normalize_sec_title(self, title):
+        """
+        Change the title to a standard name (may be wiki specific)
+        
+        @param title: section title
+        @type title: Str
+        """
+        # In this common case, there is no standard
+        return title
+    

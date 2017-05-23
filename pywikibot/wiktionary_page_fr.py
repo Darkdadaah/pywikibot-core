@@ -25,17 +25,32 @@ class WiktArticle(WiktArticleCommon):
         @type text: Str
         """
         WiktArticleCommon.__init__(self, title, text, lang);
-
+     
+    def normalize_sec_title(self, title):
+        """
+        Change the title to a standard name (may be wiki specific)
+        
+        @param title: section title
+        @type title: Str
+        """
+        # In this common case, there is no standard
+        return title
+    
     def rec_tag_sections(self, section):
         # FR specific section titles parsing
         if section.level == 2:
             # Extract the language code
-            lang_search = re.search('^\{\{ *langue *\| *(.+?) *\}\}$', section.title)
-            
             try:
+                lang_search = re.search('^\{\{ *langue *\| *(.+?) *\}\}$', section.title)
                 lang_code = lang_search.group(1)
             except:
-                raise "No language code found for %s in %s" % (self.title, section.title)
+                if re.search(u"^\{\{ *caractère *\}\}$", section.title):
+                    lang_code = 'caractere'
+                else:
+                    error_msg = "Not a correct language section for %s in %s" % (self.title, section.title)
+                    print error_msg
+                    #error_msg = "No language code found for %s in %s"
+                    raise Exception(error_msg.encode("utf-8"))
             
             section.tag        = 'lang'
             section.attributes = { 'lang': lang_code }
@@ -56,7 +71,7 @@ class WiktArticle(WiktArticleCommon):
                     section.attributes = { 'type': normal_sec_title }
             
             section.tag        = 'type'
-            section.attributes = { 'type': type_code }
+            section.attributes = { 'type': normal_sec_title }
             
         for sub_section in section.sub_sections:
             self.rec_tag_sections(sub_section)
