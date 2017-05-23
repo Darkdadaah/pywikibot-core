@@ -9,6 +9,21 @@ import re
 import sys
 from warnings import warn
 
+from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+class DumpPage(Base):
+    __tablename__ = 'dump_page'
+    id    = Column(Integer, primary_key=True)
+    title = Column(String, unique=True)
+    text  = Column(String)
+    ns    = Column(String)
+    timestamp   = Column(DateTime)
+    last_update = Column(DateTime, default=func.now())
+    is_redirect = Column(Boolean, default=False)
+    
 class WikiSection():
     
     def __init__(self, title, level, parent=None):
@@ -19,6 +34,8 @@ class WikiSection():
         @type title: Str
         """
         self.title        = title
+        self.tag          = ""
+        self.attributes   = {}
         self.text         = []
         self.sub_sections = []
         self.level        = level
@@ -48,6 +65,7 @@ class WikiArticle():
         #self.text  = text
         self.lang  = lang
         self.top_section = self.parse_sections(text)
+        self.categories = []
 
     def parse_sections(self, text):
         """
@@ -117,7 +135,8 @@ class WikiArticle():
         self._rec_print_section(self.top_section)
     
     def _rec_print_section(self, section):
-        print "SECTION (" + str(section.level) + ") = [ " + section.title + " ]"
+        attributes = map(lambda x: "%s=%s" % (x, section.attributes[x]), section.attributes.keys())
+        print "SECTION %s-%s (%s) = [ %s ]" % (section.tag, ', '.join(attributes), str(section.level), section.title)
         if section.parent:
             print "SUBSECTION OF = [ " + section.parent.title + " ]"
         
@@ -129,4 +148,10 @@ class WikiArticle():
                 break
         for sub_section in section.sub_sections:
             self._rec_print_section(sub_section)
-        
+
+    def get_categories(self):
+        """
+        TODO: parse the texts to get the categories
+        """
+        return []
+    
