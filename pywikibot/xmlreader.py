@@ -172,7 +172,8 @@ class XmlDump(object):
         """Parser that yields only the latest revision."""
         if event == "end" and elem.tag == "{%s}page" % self.uri:
             self._headers(elem)
-            revision = elem.find("{%s}revision" % self.uri)
+            revisions = elem.findall("{%s}revision" % self.uri)
+            revision = revisions.pop()
             yield self._create_revision(revision)
             elem.clear()
             self.root.clear()
