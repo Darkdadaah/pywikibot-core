@@ -115,6 +115,8 @@ class WiktArticle(WiktArticleCommon):
         @param title: section title
         @type title: Str
         """
+        lcfirst = lambda s: s[:1].lower() + s[1:]
+        title = lcfirst(title)
         try:
             data = WiktData()
         except:
