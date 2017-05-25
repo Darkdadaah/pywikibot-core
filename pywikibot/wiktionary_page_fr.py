@@ -76,7 +76,6 @@ class WiktArticle(WiktArticleCommon):
                         section.attributes = {
                                 'lang': upper_lang,
                                 'type': normal_sec_title,
-                                'type': normal_sec_title,
                                 'num': 1,
                                 'flex': False,
                                 'loc': False,
