@@ -22,8 +22,20 @@ class Article(Base):
     __tablename__ = 'article'
     id    = Column(Integer, primary_key=True)
     title = Column(String, unique=True)
-    last_update = Column(DateTime, default=func.now())
+    #last_update = Column(DateTime, default=func.now())
     errors = relationship("Error", back_populates='article', cascade="all, delete, delete-orphan")
+    lexemes = relationship("Lexeme", back_populates='article', cascade="all, delete, delete-orphan")
+
+class Lexeme(Base):
+    __tablename__ = 'lexeme'
+    id          = Column(Integer, primary_key=True)
+    article_id  = Column(Integer, ForeignKey('article.id'))
+    article     = relationship("Article", back_populates="lexemes")
+    lang        = Column(String)
+    type        = Column(String)
+    num         = Column(Integer)
+    flex        = Column(Boolean)
+    loc         = Column(Boolean)
 
 class Error(Base):
     __tablename__ = 'error'
@@ -104,5 +116,26 @@ class AnagrimesDB():
             self.session.add(db_error)
  
     def add_lexemes(self, article_id, article):
-        return
+        # Get all type sections from the article
+        start_sec = article.top_section
+        
+        for lang_sec in start_sec.sub_sections:
+            # Language section
+            if lang_sec.tag == 'lang':
+                lang = lang_sec.attributes['lang']
+                
+                for sub_sec in lang_sec.sub_sections:
+                    if sub_sec.tag == 'type':
+                        attr = sub_sec.attributes
+                        lexeme = Lexeme(
+                                article_id = article_id,
+                                lang = attr['lang'],
+                                type = attr['type'],
+                                num  = attr['num'],
+                                flex = attr['flex'],
+                                loc  = attr['loc'],
+                                )
+                        self.session.add(lexeme)
+                        self.session.flush()
+        
     
