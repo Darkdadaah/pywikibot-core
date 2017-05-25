@@ -49,7 +49,7 @@ class WiktArticle(WiktArticleCommon):
                 pars = template[1]
                 if name == 'langue':
                     section.tag        = 'lang'
-                    section.attributes = { 'lang': pars["1"] }
+                    section.attributes = { 'lang': pars["1"].strip() }
                 elif name == u'caractère':
                     section.tag        = 'car'
                 else:
@@ -65,7 +65,7 @@ class WiktArticle(WiktArticleCommon):
                 template = self.parse_template(section.title)
                 name = template[0]
                 pars = template[1]
-                sec_title = pars["1"]
+                sec_title = pars["1"].strip()
             
                 # Detect what section it is
                 normal_sec_title, sec_type = self.normalize_sec_title(sec_title)
@@ -87,8 +87,8 @@ class WiktArticle(WiktArticleCommon):
                         
                         # Check num parameter (for uniformity only)
                         if "2" in pars:
-                            if pars["2"] != upper_lang:
-                                error_msg = "Different language code in '%s' in '%s' (%s vs %s)" % (self.title, section.title, pars["2"], upper_lang)
+                            if pars["2"].strip() != upper_lang:
+                                error_msg = "Different language code in '%s' in '%s' ('%s' vs '%s')" % (self.title, section.title, pars["2"], upper_lang)
                                 self.add_error('section_type', error_msg)
                                 
                         if "3" in pars:
