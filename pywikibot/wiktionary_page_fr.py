@@ -48,9 +48,8 @@ class WiktArticle(WiktArticleCommon):
                     lang_code = 'caractere'
                 else:
                     error_msg = "Not a correct language section for %s in %s" % (self.title, section.title)
-                    print error_msg
-                    #error_msg = "No language code found for %s in %s"
-                    raise Exception(error_msg.encode("utf-8"))
+                    self.add_error('section_2', error_msg)
+                    return
             
             section.tag        = 'lang'
             section.attributes = { 'lang': lang_code }
@@ -62,7 +61,9 @@ class WiktArticle(WiktArticleCommon):
             try:
                 sec_title = sec_title_search.group(1)
             except:
-                raise "No type code found for %s in %s" % (self.title, section.title)
+                error_msg = "Not a correct type section for %s in %s (%d)" % (self.title, section.title, section.level)
+                self.add_error('section_3', error_msg)
+                return
             
             # Detect what section it is
             normal_sec_title = self.normalize_sec_title(sec_title);

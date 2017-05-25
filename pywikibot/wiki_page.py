@@ -9,21 +9,16 @@ import re
 import sys
 from warnings import warn
 
-from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-class DumpPage(Base):
-    __tablename__ = 'dump_page'
-    id    = Column(Integer, primary_key=True)
-    title = Column(String, unique=True)
-    text  = Column(String)
-    ns    = Column(String)
-    timestamp   = Column(DateTime)
-    last_update = Column(DateTime, default=func.now())
-    is_redirect = Column(Boolean, default=False)
+class WikiError():
     
+    def __init__(self, description, error_type):
+        """
+        Instantiate an error object.
+        
+        """
+        self.description = description
+        self.error_type  = error_type
+
 class WikiSection():
     
     def __init__(self, title, level, parent=None):
@@ -62,10 +57,14 @@ class WikiArticle():
         @type text: Str
         """
         self.title = title
-        #self.text  = text
         self.lang  = lang
-        self.top_section = self.parse_sections(text)
         self.categories = []
+        self.errors     = []
+        self.top_section = self.parse_sections(text)
+        
+    def add_error(self, error_type, description):
+        error = WikiError(description=description, error_type=error_type)
+        self.errors.append(error)
 
     def parse_sections(self, text):
         """
@@ -104,6 +103,11 @@ class WikiArticle():
                 
                 # Extract title
                 title = self._extract_title(line)
+                if not title:
+                    error_msg = "Error in %s, section %s" % (self.title, line)
+                    self.add_error("section_parser", error_msg)
+                    current_section.add_text(line)
+                    continue
                 
                 # Compare with the previous level
                 if current_section.level > section_level:

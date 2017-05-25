@@ -18,29 +18,9 @@ import dateutil.parser
 import pywikibot
 from pywikibot.pagegenerators import XMLDumpOldPageGenerator
 from pywikibot.xmlreader import XmlDump
+
 from pywikibot.wiktionary_page_fr import WiktArticle
-
-from sqlalchemy import create_engine
-from sqlalchemy import exc
-from sqlalchemy import Column, DateTime, String, Integer, Boolean, ForeignKey, func
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-class Meta(Base):
-    __tablename__ = 'meta'
-    id    = Column(Integer, primary_key=True)
-    name  = Column(String, unique=True)
-    timestamp   = Column(DateTime)
-
-def create_db(sqlite_path):
-    engine  = create_engine('sqlite:///' + sqlite_path)
-    session = sessionmaker()
-    session.configure(bind=engine)
-    Base.metadata.create_all(engine)
-    s = session()
-    return s
+from pywikibot.anagrimes_db import AnagrimesDB
 
 def read_dump(dump_path, sqlite_path):
     # Parse the data
@@ -54,8 +34,9 @@ def read_dump(dump_path, sqlite_path):
         raise ValueError("Language %s is not supported" % language)
     
     # Then create the SQLite DB
-    db = create_db(sqlite_path)
-    from_zero = (db.query(Meta).count() == 0)
+    db = AnagrimesDB(sqlite_path)
+    db.create_db()
+    db.define_language(language)
     
     # Store pages
     n_pages = 0
@@ -65,19 +46,18 @@ def read_dump(dump_path, sqlite_path):
             page_to_db(
                     db        = db,
                     page      = page,
-                    from_zero = from_zero,
                     language  = language
                     )
             n_pages += 1
         except StopIteration:
             break
-        if n_pages % 100000 == 0:
+        if n_pages % 1000 == 0:
             pywikibot.output( u'%d pages' % n_pages )
-            db.commit()
-    db.commit()
+            db.session.commit()
+    db.session.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 
-def page_to_db(db, page, from_zero, language):
+def page_to_db(db, page, language):
     # Create an article
     if page.ns == "0" and page.isredirect == False:
         text        = page.text
@@ -89,12 +69,13 @@ def page_to_db(db, page, from_zero, language):
                 lang  = language
                 )
         
+        # Parse article
+        art.tag_sections()
+        
         # Store the article
-        #art.add_to_db(db, from_zero);
-        art.tag_sections();
-        art.print_sections();
-    #else:
-    #    raise Exception("The end %s" % (page.title));
+        db.add_article(art)
+        
+        #art.print_sections()
 
 def main(*args):
     """
