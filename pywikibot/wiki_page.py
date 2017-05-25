@@ -8,6 +8,7 @@ Objects representing the structure of a Wiki page.
 import re
 import sys
 from warnings import warn
+from pywikibot import textlib
 
 class WikiError():
     
@@ -159,3 +160,13 @@ class WikiArticle():
         """
         return []
     
+    def parse_template(self, template_str):
+        templates = textlib.extract_templates_and_params(template_str, True, True)
+        
+        if len(templates) == 0:
+            raise Exception("Not a template")
+        elif len(templates) > 1:
+            raise Exception("More than one template")
+        else:
+            return templates[0]
+
