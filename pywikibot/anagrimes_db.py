@@ -28,21 +28,26 @@ class BaseEntity(object):
 class Article(Base, BaseEntity):
     __tablename__ = 'article'
     id    = Column(Integer, primary_key=True)
-    title = Column(String(256), index=True)
+    title = Column(String(256))
     #last_update = Column(DateTime, default=func.now())
     errors = relationship("Error", back_populates='article', cascade="all, delete, delete-orphan")
     lexemes = relationship("Lexeme", back_populates='article', cascade="all, delete, delete-orphan")
+
+Index('article_title_idx', Article.title, mysql_length=15)
 
 class Lexeme(Base, BaseEntity):
     __tablename__ = 'lexeme'
     id          = Column(Integer, primary_key=True)
     article_id  = Column(Integer, ForeignKey('article.id'), index=True)
     article     = relationship("Article", back_populates="lexemes")
-    lang        = Column(String(32), index=True)
-    type        = Column(String(64), index=True)
+    lang        = Column(String(32))
+    type        = Column(String(64))
     num         = Column(Integer)
     flex        = Column(Boolean, index=True)
     loc         = Column(Boolean, index=True)
+
+Index('lexeme_lang_idx', Lexeme.lang, mysql_length=3)
+Index('lexeme_type_idx', Lexeme.type, mysql_length=3)
 
 class Error(Base, BaseEntity):
     __tablename__ = 'error'
