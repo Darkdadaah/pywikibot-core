@@ -8,6 +8,7 @@ Objects representing a Wiktionary DB (in Anagrimes style).
 import re
 import sys
 from warnings import warn
+import unicodedata
 
 from sqlalchemy import create_engine
 from sqlalchemy import exc
@@ -174,7 +175,18 @@ class AnagrimesDB():
                 db.delete(del_art[0])
                 db.flush()
         
-        art = Article(a_title=article.title)
+        a_title        = article.title
+        a_title_r      = self.reverse_string(article.title)
+        a_title_flat   = self.strip_diacritics(article.title)
+        a_title_flat_r = self.reverse_string(a_title_flat)
+        a_alphagram    = self.alphagram(a_title_flat)
+        art = Article(
+                a_title        = a_title,
+                a_title_r      = a_title_r,
+                a_title_flat   = a_title_flat,
+                a_title_flat_r = a_title_flat_r,
+                a_alphagram    = a_alphagram,
+                )
         self.session.add(art)
         self.session.flush()
         self.add_errors(art.a_artid, article)
@@ -207,5 +219,20 @@ class AnagrimesDB():
                                 )
                         self.session.add(lexeme)
                         self.session.flush()
-        
     
+    def reverse_string(self, string):
+        #return  string.decode('utf8')[::-1].encode('utf8')
+        return  string[::-1]
+
+    def strip_diacritics(self, string):
+        string = re.sub(u"œ", u"oe", string)
+        no_diac = ''.join(c for c in unicodedata.normalize('NFD', string)
+                                  if unicodedata.category(c) != 'Mn')
+        return self.remove_non_ascii(no_diac)
+
+    def alphagram(self, string):
+        return  ''.join(sorted(string))
+
+    def remove_non_ascii(self, string):
+        return "".join(char for char in string.lower() if ((ord(char) >= 97 and ord(char) <= 122) or (ord(char) >= 65 and ord(char) <= 90)))
+
