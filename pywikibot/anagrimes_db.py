@@ -21,8 +21,8 @@ Base = declarative_base()
 class BaseEntity(object):
     __table_args__ = {  
             'mysql_engine': 'InnoDB',
-            'mysql_default charset': 'utf8',
-            'mysql_collate': 'utf8_bin',
+            'mysql_default charset': 'utf8mb4',
+            'mysql_collate': 'utf8mb4_general_ci',
             }
 
 class Article(Base, BaseEntity):
@@ -96,16 +96,9 @@ class AnagrimesDB():
         if self.db_type == 'sqlite':
             engine  = create_engine('sqlite:///' + db_con['sqlite_path'])
         elif self.db_type == 'mysql':
-            engine = create_engine("mysql+pymysql://%s:%s@%s/%s?host=%s?port=%s?charset=%s" % 
-                        (db_con['mysql_user'],
-                        db_con['mysql_pass'],
-                        db_con['mysql_host'],
-                        db_con['mysql_db'],
-                        db_con['mysql_host'],
-                        db_con['mysql_port'],
-                        'utf8'
-                        )
-                    )
+            connect_string = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(db_con['mysql_user'], db_con['mysql_pass'], db_con['mysql_host'], db_con['mysql_port'], db_con['mysql_db'])
+
+            engine = create_engine(connect_string)
         session = sessionmaker()
         session.configure(bind=engine)
         Base.metadata.create_all(engine)
