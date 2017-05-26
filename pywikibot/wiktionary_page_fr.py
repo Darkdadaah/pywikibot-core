@@ -4,6 +4,7 @@ Objects representing the structure of a French Wiktionary page.
 
 """
 # Same license as the other scripts from Pywikibot
+from __future__ import unicode_literals
 
 import re
 import sys

@@ -4,6 +4,7 @@ Objects representing the structure of a Wiki page.
 
 """
 # Same license as the other scripts from Pywikibot
+from __future__ import unicode_literals
 
 import re
 import sys
