@@ -105,7 +105,7 @@ class WikiArticle():
                 # Extract title
                 title = self._extract_title(line)
                 if not title:
-                    error_msg = "Error in '%s' section '%s'" % (self.title, line)
+                    error_msg = "[[%s]] Section error '%s'" % (self.title, line)
                     self.add_error("section_parser", error_msg)
                     current_section.add_text(line)
                     continue

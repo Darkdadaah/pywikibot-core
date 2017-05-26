@@ -55,9 +55,9 @@ class WiktArticle(WiktArticleCommon):
                 else:
                     raise Exception("Not a correct language template")
             except:
-                    error_msg = "Not a correct language section for '%s' in '%s'" % (self.title, section.title)
-                    self.add_error('section_2', error_msg)
-                    return
+                error_msg = "[[%s]] Wrong lang section: '%s'" % (self.title, section.title)
+                self.add_error('section_2', error_msg)
+                return
         
         if section.level == 3:
             # Extract parameters
@@ -88,18 +88,18 @@ class WiktArticle(WiktArticleCommon):
                         # Check num parameter (for uniformity only)
                         if "2" in pars:
                             if pars["2"].strip() != upper_lang:
-                                error_msg = "Different language code in '%s' in '%s' ('%s' vs '%s')" % (self.title, section.title, pars["2"], upper_lang)
+                                error_msg = "[[%s]] Different lang code: '%s' (section='%s' vs lang='%s')" % (self.title, section.title, pars["2"], upper_lang)
                                 self.add_error('section_type', error_msg)
                                 
                         if "3" in pars:
                             if pars["3"] == 'flexion':
                                 section.attributes["flex"] = True
                             else:
-                                error_msg = "Wrong parameter 2 in '%s' in type section '%s'" % (self.title, section.title)
+                                error_msg = "[[%s]] Wrong par 3 (flexion) in type section: '%s'" % (self.title, section.title)
                                 self.add_error('section_type', error_msg)
                 
             except Exception as e:
-                error_msg = "Wrong level 3 section format for '%s' in '%s'" % (self.title, section.title)
+                error_msg = "[[%s]] Wrong section 3: '%s'" % (self.title, section.title)
                 error_msg = error_msg + " (%s)" % (unicode(e))
                 self.add_error('section_3', error_msg)
                 return
@@ -133,5 +133,5 @@ class WiktArticle(WiktArticleCommon):
         elif title in level4:
             return level4[title], 'level4'
         else:
-            raise Exception("Unrecognized type %s in %s" % (title, self.title))
+            raise Exception("[[%s]] Unknown section: '%s'" % (self.title, title))
     
