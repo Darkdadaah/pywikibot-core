@@ -18,44 +18,86 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class BaseEntity(object):
     __table_args__ = {  
-            'mysql_engine': 'InnoDB',
+            'mysql_engine':          'InnoDB',
             'mysql_default charset': 'utf8mb4',
-            'mysql_collate': 'utf8mb4_general_ci',
+            'mysql_collate':         'utf8mb4_general_ci',
             }
 
-class Article(Base, BaseEntity):
-    __tablename__ = 'article'
-    id    = Column(Integer, primary_key=True)
-    title = Column(String(256))
-    #last_update = Column(DateTime, default=func.now())
-    errors = relationship("Error", back_populates='article', cascade="all, delete, delete-orphan")
-    lexemes = relationship("Lexeme", back_populates='article', cascade="all, delete, delete-orphan")
 
-Index('article_title_idx', Article.title, mysql_length=15)
+class Article(Base, BaseEntity):
+    __tablename__ = 'articles'
+    a_artid       = Column(Integer, primary_key=True)
+    a_title        = Column(String(255))
+    a_title_r      = Column(String(255))
+    a_title_flat   = Column(String(255))
+    a_title_flat_r = Column(String(255))
+    a_alphagram    = Column(String(255))
+
+    errors  = relationship("Error",  back_populates='articles', cascade="all, delete, delete-orphan")
+    lexemes = relationship("Lexeme", back_populates='articles', cascade="all, delete, delete-orphan")
+
+
+Index('a_title_idx',        Article.a_title,        mysql_length=15)
+Index('a_title_r_idx',      Article.a_title_r,      mysql_length=15)
+Index('a_title_flat_idx',   Article.a_title_flat,   mysql_length=15)
+Index('a_title_flat_r_idx', Article.a_title_flat_r, mysql_length=15)
+Index('a_alphagram_idx',    Article.a_alphagram,    mysql_length=15)
+
 
 class Lexeme(Base, BaseEntity):
-    __tablename__ = 'lexeme'
-    id          = Column(Integer, primary_key=True)
-    article_id  = Column(Integer, ForeignKey('article.id'), index=True)
-    article     = relationship("Article", back_populates="lexemes")
-    lang        = Column(String(32))
-    type        = Column(String(64))
-    num         = Column(Integer)
-    flex        = Column(Boolean, index=True)
-    loc         = Column(Boolean, index=True)
+    __tablename__ = 'lexemes'
+    l_lexid       = Column(Integer, primary_key=True)
+    l_artid       = Column(Integer, ForeignKey('articles.a_artid'))
+    l_lang        = Column(String(32))
+    l_type        = Column(String(64))
+    l_genre       = Column(String(16))
+    l_num         = Column(Integer)
+    l_is_flexion  = Column(Boolean, index=True)
+    l_is_locution = Column(Boolean, index=True)
+    l_is_gentile  = Column(Boolean, index=True)
+    l_rand        = Column(Integer, index=True)
+    l_sigle       = Column(String(16), index=True)
 
-Index('lexeme_lang_idx', Lexeme.lang, mysql_length=3)
-Index('lexeme_type_idx', Lexeme.type, mysql_length=3)
+    articles = relationship("Article", back_populates="lexemes")
+    prons    = relationship("Pron",    back_populates='lexemes', cascade="all, delete, delete-orphan")
+
+
+Index('l_lang_idx',  Lexeme.l_lang,  mysql_length=3)
+Index('l_type_idx',  Lexeme.l_type,  mysql_length=4)
+Index('l_genre_idx', Lexeme.l_genre, mysql_length=4)
+Index('l_sigle_idx', Lexeme.l_sigle, mysql_length=2)
+
+
+class Pron(Base, BaseEntity):
+    __tablename__ = 'prons'
+    p_pronid      = Column(Integer, primary_key=True)
+    p_lexid       = Column(Integer, ForeignKey('lexemes.l_lexid'))
+    p_pron        = Column(String(255))
+    p_pron_flat   = Column(String(255))
+    p_pron_flat_r = Column(String(255))
+    p_num         = Column(Integer)
+
+    lexemes = relationship("Lexeme", back_populates="prons")
+
+
+Index('p_pron_idx',        Pron.p_pron,        mysql_length=15)
+Index('p_pron_flat_idx',   Pron.p_pron_flat,   mysql_length=15)
+Index('p_pron_flat_r_idx', Pron.p_pron_flat_r, mysql_length=15)
+
 
 class Error(Base, BaseEntity):
-    __tablename__ = 'error'
+    __tablename__ = 'errors'
     id          = Column(Integer, primary_key=True)
-    article_id  = Column(Integer, ForeignKey('article.id'), index=True)
+    article_id  = Column(Integer, ForeignKey('articles.a_artid'), index=True)
     article     = relationship("Article", back_populates="errors")
     description = Column(UnicodeText)
     error_type  = Column(UnicodeText)
+
+    articles = relationship("Article", back_populates="errors")
+
 
 class Meta(Base, BaseEntity):
     __tablename__ = 'meta'
@@ -63,6 +105,7 @@ class Meta(Base, BaseEntity):
     key   = Column(UnicodeText)
     value = Column(UnicodeText)
     timestamp   = Column(DateTime, default=func.now())
+
 
 class AnagrimesDB():
 
@@ -126,16 +169,16 @@ class AnagrimesDB():
     def add_article(self, article):
         db = self.session
         if not self.from_zero:
-            del_art = db.query(Article).filter_by(title=article.title).all()
+            del_art = db.query(Article).filter_by(a_title=article.title).all()
             if del_art:
                 db.delete(del_art[0])
                 db.flush()
         
-        art = Article(title=article.title)
+        art = Article(a_title=article.title)
         self.session.add(art)
         self.session.flush()
-        self.add_errors(art.id, article)
-        self.add_lexemes(art.id, article)
+        self.add_errors(art.a_artid, article)
+        self.add_lexemes(art.a_artid, article)
     
     def add_errors(self, article_id, article):
         for error in article.errors:
@@ -155,12 +198,12 @@ class AnagrimesDB():
                     if sub_sec.tag == 'type':
                         attr = sub_sec.attributes
                         lexeme = Lexeme(
-                                article_id = article_id,
-                                lang = attr['lang'],
-                                type = attr['type'],
-                                num  = attr['num'],
-                                flex = attr['flex'],
-                                loc  = attr['loc'],
+                                l_artid      = article_id,
+                                l_lang        = attr['lang'],
+                                l_type        = attr['type'],
+                                l_num         = attr['num'],
+                                l_is_flexion  = attr['flex'],
+                                l_is_locution = attr['loc'],
                                 )
                         self.session.add(lexeme)
                         self.session.flush()
