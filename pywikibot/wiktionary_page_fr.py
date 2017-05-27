@@ -76,13 +76,23 @@ class WiktArticle(WiktArticleCommon):
                             self.add_error('form_line', error_msg)
                             return
 
+                        # Determine some attributes
+                        loc     = (True and " " in self.title)
+                        flex    = ("3" in pars and pars["3"] == "flexion")
+                        genre   = None
+                        gentile = False
+                        sigle   = None
+
                         # Store data for this section 
                         section.attributes = {
                                 'lang': upper_lang,
                                 'type': normal_sec_title,
                                 'num': 1,
-                                'flex': False,
-                                'loc': False,
+                                'genre': genre,
+                                'flex': flex,
+                                'loc': loc,
+                                'gentile': gentile,
+                                'sigle': sigle,
                                 'prons': prons
                                 }
                         
