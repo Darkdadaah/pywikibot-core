@@ -20,8 +20,9 @@ import pywikibot
 from pywikibot.pagegenerators import XMLDumpOldPageGenerator
 from pywikibot.xmlreader import XmlDump
 
-from pywikibot.wiktionary_page_fr import WiktArticle
 from pywikibot.anagrimes_db import AnagrimesDB
+
+Article = None
 
 def read_dump(dump_path, db_con):
     # Parse the data
@@ -29,8 +30,11 @@ def read_dump(dump_path, db_con):
     dump = XmlDump(dump_path)
     dump.parse_siteinfo()
     language = unicode(dump.siteinfo['lang'])
+    global Article
     if language == 'frwiktionary':
-        from pywikibot.wiktionary_page_fr import WiktArticle
+        from pywikibot.wiktionary_page_fr import WiktArticle as Article
+    elif language == 'enwiktionary':
+        from pywikibot.wiktionary_page_en import WiktArticle as Article
     else:
         raise ValueError("Language %s is not supported" % language)
     
@@ -64,7 +68,7 @@ def page_to_db(db, page, language):
         text        = page.text
         text.strip()
     
-        art = WiktArticle(
+        art = Article(
                 title = unicode(page.title),
                 text  = unicode(page.text),
                 lang  = language
