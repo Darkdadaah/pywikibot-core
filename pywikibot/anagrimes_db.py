@@ -12,7 +12,7 @@ import unicodedata
 
 from sqlalchemy import create_engine
 from sqlalchemy import exc
-from sqlalchemy import Column, Index, DateTime, String, UnicodeText, Integer, Boolean, ForeignKey, func
+from sqlalchemy import Column, Index, DateTime, String, UnicodeText, Integer, Float, Boolean, ForeignKey, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
@@ -60,7 +60,7 @@ class Lexeme(Base, BaseEntity):
     l_is_flexion  = Column(Boolean, index=True)
     l_is_locution = Column(Boolean, index=True)
     l_is_gentile  = Column(Boolean, index=True)
-    l_rand        = Column(Integer, index=True)
+    l_rand        = Column(Float(precision=40), index=True)
     l_sigle       = Column(String(16), index=True)
 
     articles = relationship("Article", back_populates="lexemes")
@@ -210,6 +210,7 @@ class AnagrimesDB():
                 for sub_sec in lang_sec.sub_sections:
                     if sub_sec.tag == 'type' and sub_sec.attributes:
                         attr = sub_sec.attributes
+                        rand = Atools.random()
                         lexeme = Lexeme(
                                 l_artid      = article_id,
                                 l_lang        = attr['lang'],
@@ -220,7 +221,7 @@ class AnagrimesDB():
                                 l_is_gentile  = attr['gentile'],
                                 l_sigle       = attr['sigle'],
                                 l_genre       = attr['genre'],
-                                l_rand        = attr['rand'],
+                                l_rand        = rand,
                                 )
                         self.session.add(lexeme)
                         self.session.flush()

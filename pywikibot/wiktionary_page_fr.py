@@ -82,7 +82,6 @@ class WiktArticle(WiktArticleCommon):
                         loc     = (True and " " in self.title)
                         flex    = ("3" in pars and pars["3"] == "flexion")
                         gentile = False
-                        rand    = None
 
                         # Store data for this section 
                         section.attributes = {
@@ -94,8 +93,7 @@ class WiktArticle(WiktArticleCommon):
                                 'loc': loc,
                                 'gentile': gentile,
                                 'sigle': sigle,
-                                'prons': prons,
-                                'rand': rand,
+                                'prons': prons
                                 }
                         
                         # Get num parameter

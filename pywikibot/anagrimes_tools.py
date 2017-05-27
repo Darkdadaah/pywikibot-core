@@ -9,6 +9,7 @@ import re
 import sys
 from warnings import warn
 import unicodedata
+from random import random
 
 class Atools(object):
     
@@ -73,4 +74,8 @@ class Atools(object):
     @classmethod
     def remove_non_letter(cls, string):
         return "".join(char for char in string.lower() if (char.isalpha() or char == ' '))
+
+    @classmethod
+    def random(cls):
+        return random()
 
