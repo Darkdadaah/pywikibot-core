@@ -15,7 +15,7 @@ from wiktionary_page_fr_data import WiktData
 
 class WiktArticle(WiktArticleCommon):
     """
-    WiktArticleFr: Wiktionary article object.
+    WiktArticle: Wiktionary article object.
     """
     data = {}
     
@@ -30,16 +30,6 @@ class WiktArticle(WiktArticleCommon):
         """
         WiktArticleCommon.__init__(self, title, text, lang);
      
-    def normalize_sec_title(self, title):
-        """
-        Change the title to a standard name (may be wiki specific)
-        
-        @param title: section title
-        @type title: Str
-        """
-        # In this common case, there is no standard
-        return title
-    
     def rec_tag_sections(self, section):
         # FR specific section titles parsing
         if section.level == 2:
