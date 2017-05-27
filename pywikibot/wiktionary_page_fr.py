@@ -70,7 +70,9 @@ class WiktArticle(WiktArticleCommon):
                         # Parse form line
                         try:
                             form_line = WiktFormLine(section, self.title, upper_lang)
-                            prons = form_line.get_prons()
+                            prons     = form_line.get_prons()
+                            genre     = form_line.get_genre()
+                            sigle     = form_line.get_sigle()
                         except Exception as e:
                             error_msg = "[[%s]] Can't parse form line: '%s' (%s)" % (self.title, section.title, unicode(e))
                             self.add_error('form_line', error_msg)
@@ -79,9 +81,8 @@ class WiktArticle(WiktArticleCommon):
                         # Determine some attributes
                         loc     = (True and " " in self.title)
                         flex    = ("3" in pars and pars["3"] == "flexion")
-                        genre   = None
                         gentile = False
-                        sigle   = None
+                        rand    = None
 
                         # Store data for this section 
                         section.attributes = {
@@ -93,7 +94,8 @@ class WiktArticle(WiktArticleCommon):
                                 'loc': loc,
                                 'gentile': gentile,
                                 'sigle': sigle,
-                                'prons': prons
+                                'prons': prons,
+                                'rand': rand,
                                 }
                         
                         # Get num parameter
@@ -174,7 +176,11 @@ class WiktFormLine(object):
 
         # We're looking for the form line
         for line in self.section.text:
-            if line.startswith("'''"):
+            if line.startswith("'''") or line.startswith("{{polytonique"):
+                self.line_str = line
+                return
+            # Special case: the form itself is missing, only prons
+            if line.startswith("{{phon") or line.startswith("{{pron"):
                 self.line_str = line
                 return
         raise Exception("No form line found")
@@ -205,7 +211,7 @@ class WiktFormLine(object):
                     continue
 
                 if "2" in args and args["2"].strip() != "":
-                    pron_lang = args["2".strip()]
+                    pron_lang = args["2"].strip()
                 elif "lang" in args:
                     pron_lang = args["lang"]
                 else:
@@ -214,9 +220,50 @@ class WiktFormLine(object):
                 # We have enough to keep this pron!
                 prons.append(pron_str)
 
+            # Sigle?
+            elif temp[0] in ('sigle'):
+                self.data["sigle"] = "sigle"
+
+            elif temp[0] in ('abrev', 'abrév', 'abréviation'):
+                self.data["sigle"] = "abrev"
+
+            elif temp[0] in ('acron', 'acronyme'):
+                self.data["sigle"] = "acron"
+
+            elif temp[0] in ('sigle'):
+                self.data["sigle"] = "sigle"
+
+            # Genre?
+            elif temp[0] in ("m", "f", "c", "fplur", "fsing",
+                    "fm", "mf", "mf ?", "mf", "mn", "mn ?",
+                    "mplur", "msing", "n", "nplur", "nsinig",
+                    "i", "t"):
+                self.data["genre"] = temp[0]
+
+            elif temp[0] in ("genre"):
+                self.data["genre"] = "NA"
+
+
         self.data["prons"] = prons
 
     def get_prons(self):
         self.parse()
-        return self.data["prons"]
+        if "prons" in self.data:
+            return self.data["prons"]
+        else:
+            return None
+
+    def get_genre(self):
+        self.parse()
+        if "genre" in self.data:
+            return self.data["genre"]
+        else:
+            return None
+
+    def get_sigle(self):
+        self.parse()
+        if "sigle" in self.data:
+            return self.data["sigle"]
+        else:
+            return None
 

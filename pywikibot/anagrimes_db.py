@@ -219,6 +219,8 @@ class AnagrimesDB():
                                 l_is_locution = attr['loc'],
                                 l_is_gentile  = attr['gentile'],
                                 l_sigle       = attr['sigle'],
+                                l_genre       = attr['genre'],
+                                l_rand        = attr['rand'],
                                 )
                         self.session.add(lexeme)
                         self.session.flush()
