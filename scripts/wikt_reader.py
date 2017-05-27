@@ -49,9 +49,9 @@ def read_dump(dump_path, db_con):
         try:
             page = next(xml.parser)
             page_to_db(
-                    db        = db,
-                    page      = page,
-                    language  = language
+                    db       = db,
+                    page     = page,
+                    language = language
                     )
             n_pages += 1
         except StopIteration:

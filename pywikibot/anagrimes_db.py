@@ -208,7 +208,7 @@ class AnagrimesDB():
                 lang = lang_sec.attributes['lang']
                 
                 for sub_sec in lang_sec.sub_sections:
-                    if sub_sec.tag == 'type':
+                    if sub_sec.tag == 'type' and sub_sec.attributes:
                         attr = sub_sec.attributes
                         lexeme = Lexeme(
                                 l_artid      = article_id,
@@ -220,4 +220,24 @@ class AnagrimesDB():
                                 )
                         self.session.add(lexeme)
                         self.session.flush()
+                        self.add_prons(lexeme.l_lexid, sub_sec)
     
+    def add_prons(self, lexeme_id, section):
+        # Get list of prons
+        prons = section.attributes["prons"]
+        
+        p_num = 1
+        for pron_str in prons:
+            p_pron_flat   = Atools.simple_pronunciation(pron_str)
+            p_pron_flat_r = Atools.reverse_string(p_pron_flat)
+            pron = Pron(
+                    p_lexid = lexeme_id,
+                    p_pron        = pron_str,
+                    p_pron_flat   = p_pron_flat,
+                    p_pron_flat_r = p_pron_flat_r,
+                    p_num = p_num
+                    )
+            self.session.add(pron)
+            p_num += 1
+        self.session.flush()
+

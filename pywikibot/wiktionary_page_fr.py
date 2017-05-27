@@ -8,6 +8,8 @@ from __future__ import unicode_literals
 
 import re
 import sys
+import textlib
+
 from warnings import warn
 from wiktionary_page import WiktArticleCommon
 from wiktionary_page_fr_data import WiktData
@@ -64,12 +66,24 @@ class WiktArticle(WiktArticleCommon):
                     section.tag = sec_type
                     if sec_type == 'type':
                         upper_lang = section.parent.attributes['lang']
+
+                        # Parse form line
+                        try:
+                            form_line = WiktFormLine(section, self.title, upper_lang)
+                            prons = form_line.get_prons()
+                        except Exception as e:
+                            error_msg = "[[%s]] Can't parse form line: '%s' (%s)" % (self.title, section.title, unicode(e))
+                            self.add_error('form_line', error_msg)
+                            return
+
+                        # Store data for this section 
                         section.attributes = {
                                 'lang': upper_lang,
                                 'type': normal_sec_title,
                                 'num': 1,
                                 'flex': False,
                                 'loc': False,
+                                'prons': prons
                                 }
                         
                         # Get num parameter
@@ -125,4 +139,74 @@ class WiktArticle(WiktArticleCommon):
             return level4[title], 'level4'
         else:
             raise Exception("[[%s]] Unknown section: '%s'" % (self.title, title))
-    
+        
+
+class WiktFormLine(object):
+
+    def __init__(self, section, title, lang):
+        """
+        Instantiate a lexeme form line object.
+        
+        @param title: title of the article
+        @type title: Str
+        @param text: text of the article
+        @type text: Str
+        """
+        self.lang     = lang
+        self.section  = section
+        self.title    = title
+        self.line_str = None
+        self.data     = {}
+
+    def get_form_line(self):
+        if self.line_str:
+            return self.line_str
+
+        # We're looking for the form line
+        for line in self.section.text:
+            if line.startswith("'''"):
+                self.line_str = line
+                return
+        raise Exception("No form line found")
+
+    def parse(self):
+        if self.data:
+            return
+
+        # Get the first line
+        form_line = self.get_form_line()
+        
+        # Extract the templates on the line
+        templates = textlib.extract_templates_and_params(self.line_str, True, True)
+
+        # Get the interesting ones
+        self.extract_prons_from_templates(templates)
+
+    def extract_prons_from_templates(self, templates):
+        prons = []
+        for temp in templates:
+            if temp[0] in ('pron', 'phon', 'phono'):
+                args = temp[1]
+
+                # Get pron string itself
+                if "1" in args and args["1"].strip() != "":
+                    pron_str = args["1"].strip()
+                else:
+                    continue
+
+                if "2" in args and args["2"].strip() != "":
+                    pron_lang = args["2".strip()]
+                elif "lang" in args:
+                    pron_lang = args["lang"]
+                else:
+                    raise Exception("No lang in pron template")
+
+                # We have enough to keep this pron!
+                prons.append(pron_str)
+
+        self.data["prons"] = prons
+
+    def get_prons(self):
+        self.parse()
+        return self.data["prons"]
+

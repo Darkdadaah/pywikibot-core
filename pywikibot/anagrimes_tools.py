@@ -44,6 +44,28 @@ class Atools(object):
         return string
 
     @classmethod
+    def simple_pronunciation(cls, string):
+        string0 = string
+
+        # Remove "punctuation" characters
+        string = re.sub(u"[\.,\- ‿ːˈˌ]", u"", string);
+
+        # Change all R chars to r
+        string = re.sub(u"[ʁrɹʀɾ]", u"r", string);
+
+        # Other special changes
+        pairs = [
+                (u"ʧ", u"tʃ"),
+                (u"ʤ", u"dʒ"),
+                ]
+        for pair in pairs:
+            string = re.sub(pair[0], pair[1], string)
+
+        if string != string0 and u"ʁ" in string0 and u"ʁ" in string:
+            print "PRON %s => %s" % (string0, string)
+        return string
+
+    @classmethod
     def alphagram(cls, string):
         string = re.sub(' ', '', string)
         return  ''.join(sorted(string.lower()))
