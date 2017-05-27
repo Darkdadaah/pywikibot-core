@@ -19,16 +19,36 @@ class Atools(object):
 
     @classmethod
     def strip_diacritics(cls, string):
-        string = re.sub(u"œ", u"oe", string)
+        string = cls.replace_special_chars(string)
         no_diac = ''.join(c for c in unicodedata.normalize('NFD', string)
                                   if unicodedata.category(c) != 'Mn')
-        return cls.remove_non_ascii(no_diac)
+        return cls.remove_non_letter(no_diac)
+
+    @classmethod
+    def replace_special_chars(cls, string):
+        pairs = [
+                (u"œ", u"oe"),
+                (u"Æ", u"AE"),
+                (u"æ", u"ae"),
+                (u"Œ", u"OE"),
+                (u"œ", u"oe"),
+                (u"ø", u"oe"),
+                (u"&amp;", u""),
+                (u"&quot;", u""),
+                (u"‿", u" "),
+                (u"…", u"..."),
+                (u"_", u" "),
+                ]
+        for pair in pairs:
+            string = re.sub(pair[0], pair[1], string)
+        return string
 
     @classmethod
     def alphagram(cls, string):
-        return  ''.join(sorted(string))
+        string = re.sub(' ', '', string)
+        return  ''.join(sorted(string.lower()))
 
     @classmethod
-    def remove_non_ascii(cls, string):
-        return "".join(char for char in string.lower() if ((ord(char) >= 97 and ord(char) <= 122) or (ord(char) >= 65 and ord(char) <= 90)))
+    def remove_non_letter(cls, string):
+        return "".join(char for char in string.lower() if (char.isalpha() or char == ' '))
 
