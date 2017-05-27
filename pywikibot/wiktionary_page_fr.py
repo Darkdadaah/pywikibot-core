@@ -78,10 +78,18 @@ class WiktArticle(WiktArticleCommon):
                             self.add_error('form_line', error_msg)
                             return
 
+                        # Parse defs lines
+                        try:
+                            defs    = DefCollection(section, self.title, upper_lang)
+                            gentile = defs.has_gentile()
+                        except Exception as e:
+                            error_msg = "[[%s]] Can't parse defs in '%s' (%s)" % (self.title, section.title, unicode(e))
+                            self.add_error('def_line', error_msg)
+                            gentile = False
+
                         # Determine some attributes
                         loc     = (True and " " in self.title)
                         flex    = ("3" in pars and pars["3"] == "flexion")
-                        gentile = False
 
                         # Store data for this section 
                         section.attributes = {
@@ -265,3 +273,65 @@ class WiktFormLine(object):
         else:
             return None
 
+
+class DefCollection(object):
+
+    def __init__(self, section, title, lang):
+        """
+        Instantiate a collection of Wiktionary definitions.
+        
+        @param title: title of the article
+        @type title: Str
+        @param text: text of the article
+        @type text: Str
+        """
+        self.section  = section
+        self.title    = title
+        self.lang     = lang
+        self.defins   = []
+        self.attr     = {
+                'gentile': False
+                }
+        self.parsed   = False
+
+    def parse_defs(self):
+        if self.parsed: return
+
+        # Find all definition lines
+        for line in self.section.text:
+            if line.startswith("#"):
+                defin = Definition(line)
+                self.defins.append(defin)
+
+            # Special templates
+            elif re.search("\{\{note-gentil", line):
+                self.attr["gentile"] = True
+
+        # Also look in the subsections for special templates
+        for sub_section in self.section.sub_sections:
+            if "note" in sub_section.title:
+                for line in sub_section.text:
+                    if re.search("\{\{note-gentil", line):
+                        self.attr["gentile"] = True
+        self.parsed = True
+
+    def has_gentile(self):
+        self.parse_defs()
+        return self.attr["gentile"]
+
+
+def Definition(object):
+
+    def __init__(self, line):
+        """
+        Instantiate a Wiktionary definition.
+        
+        @param title: title of the article
+        @type title: Str
+        @param text: text of the article
+        @type text: Str
+        """
+        self.line     = line
+
+    def parse_line(self):
+        return
