@@ -49,7 +49,7 @@ class WikiArticle():
     WikiArticle: Wiki article object.
     """
     
-    def __init__(self, title, text, lang):
+    def __init__(self, title, text, lang, artid=None):
         """
         Instantiate an article object from its title and text
         
@@ -60,6 +60,7 @@ class WikiArticle():
         """
         self.title = title
         self.lang  = lang
+        self.artid  = artid
         self.categories = []
         self.errors     = []
         self.top_section = self.parse_sections(text)

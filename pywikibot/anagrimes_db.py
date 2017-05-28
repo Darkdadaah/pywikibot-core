@@ -187,6 +187,7 @@ class AnagrimesDB():
                 a_title_flat   = a_title_flat,
                 a_title_flat_r = a_title_flat_r,
                 a_alphagram    = a_alphagram,
+                a_artid        = article.artid
                 )
         self.session.add(art)
         self.session.flush()

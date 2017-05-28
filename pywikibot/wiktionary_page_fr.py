@@ -21,7 +21,7 @@ class WiktArticle(WiktArticleCommon):
     """
     data = {}
     
-    def __init__(self, title, text, lang):
+    def __init__(self, title, text, lang, artid=None):
         """
         Instantiate an article object from its title and text
         
@@ -30,7 +30,7 @@ class WiktArticle(WiktArticleCommon):
         @param text: text of the article
         @type text: Str
         """
-        WiktArticleCommon.__init__(self, title, text, lang);
+        WiktArticleCommon.__init__(self, title, text, lang, artid);
      
     def rec_tag_sections(self, section):
         # FR specific section titles parsing
@@ -182,7 +182,7 @@ class WiktFormLine(object):
 
         # We're looking for the form line
         for line in self.section.text:
-            if line.startswith("'''") or line.startswith("{{polytonique"):
+            if line.startswith("'''") or re.search("{{(Arabe?|Braille|Cyrl|FAchar|polytonique|KUchar|URchar|Lang\|[^\|]+)\|'''", line) or re.search("{{(devanagari)\|", line) or line.startswith("{{la-verb") or re.search("{{(zh|ja)-mot", line):
                 self.line_str = line
                 return
             # Special case: the form itself is missing, only prons
@@ -220,8 +220,8 @@ class WiktFormLine(object):
                     pron_lang = args["2"].strip()
                 elif "lang" in args:
                     pron_lang = args["lang"]
-                else:
-                    raise Exception("No lang in pron template")
+                #else:
+                #    raise Exception("No lang in pron template")
 
                 # We have enough to keep this pron!
                 prons.append(pron_str)

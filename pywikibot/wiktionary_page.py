@@ -15,7 +15,7 @@ class WiktArticleCommon(WikiArticle):
     WiktArticleCommon: Wiktionary article object.
     """
     
-    def __init__(self, title, text, lang):
+    def __init__(self, title, text, lang, artid=None):
         """
         Instantiate an article object from its title and text
         
@@ -24,7 +24,7 @@ class WiktArticleCommon(WikiArticle):
         @param text: text of the article
         @type text: Str
         """
-        WikiArticle.__init__(self, title, text, lang);
+        WikiArticle.__init__(self, title, text, lang, artid)
         
     def tag_sections(self):
         """

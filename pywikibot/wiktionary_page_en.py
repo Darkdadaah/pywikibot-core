@@ -19,7 +19,7 @@ class WiktArticle(WiktArticleCommon):
     """
     data = {}
     
-    def __init__(self, title, text, lang):
+    def __init__(self, title, text, lang, artid=None):
         """
         Instantiate an article object from its title and text
         
@@ -28,7 +28,7 @@ class WiktArticle(WiktArticleCommon):
         @param text: text of the article
         @type text: Str
         """
-        WiktArticleCommon.__init__(self, title, text, lang);
+        WiktArticleCommon.__init__(self, title, text, lang, artid);
      
     def rec_tag_sections(self, section):
         # EN specific section titles parsing

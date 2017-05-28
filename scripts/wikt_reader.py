@@ -71,7 +71,8 @@ def page_to_db(db, page, language):
         art = Article(
                 title = unicode(page.title),
                 text  = unicode(page.text),
-                lang  = language
+                lang  = language,
+                artid = page.id
                 )
         
         # Parse article
