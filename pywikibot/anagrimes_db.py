@@ -16,6 +16,7 @@ from sqlalchemy import Column, Index, DateTime, String, UnicodeText, Integer, Fl
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import text
 
 from anagrimes_tools import Atools
 Base = declarative_base()
@@ -118,7 +119,8 @@ class AnagrimesDB():
         @param path: path to the SQL db file
         @type path: Str
         """
-        self.from_zero = True
+        self.from_zero = False
+        self.lexid = 1
         self.db_con = db_con
         if 'sqlite_path' in db_con:
             self.db_type = 'sqlite'
@@ -153,7 +155,15 @@ class AnagrimesDB():
         
         # Store the session and if the db was empty
         self.session = db
-        self.from_zero = (db.query(Meta).count() == 0)
+        if db.query(Meta).count() > 0:
+            self.from_zero = False
+            print "Updating DB"
+        else:
+            self.from_zero = True
+
+            # Faster without foreign keys
+            if self.db_type == 'mysql':
+                db.execute("SET FOREIGN_KEY_CHECKS = 0")
     
     def define_language(self, lang):
         """
@@ -165,16 +175,29 @@ class AnagrimesDB():
         meta_lang = Meta(key=u'language', value=lang)
         db = self.session
         if self.from_zero:
+            print "Init with language: %s" % lang
             db.add(meta_lang)
             db.commit()
+
+    def add_articles(self, articles):
+        db = self.session
+        if not self.from_zero:
+            for article in articles:
+                del_art = db.query(Article).filter_by(a_artid=article.artid).all()
+                if del_art:
+                    db.delete(del_art[0])
+            db.flush()
+        for article in articles:
+            self.add_article(article)
+        db.commit()
         
     def add_article(self, article):
         db = self.session
-        if not self.from_zero:
-            del_art = db.query(Article).filter_by(a_title=article.title).all()
-            if del_art:
-                db.delete(del_art[0])
-                db.flush()
+       # if not self.from_zero:
+       #     del_art = db.query(Article).filter_by(a_artid=article.artid).all()
+       #     if del_art:
+       #         db.delete(del_art[0])
+       #         db.flush()
         
         a_title        = article.title
         a_title_r      = Atools.reverse_string(article.title)
@@ -190,7 +213,6 @@ class AnagrimesDB():
                 a_artid        = article.artid
                 )
         self.session.add(art)
-        self.session.flush()
         self.add_errors(art.a_artid, article)
         self.add_lexemes(art.a_artid, article)
     
@@ -225,8 +247,20 @@ class AnagrimesDB():
                                 l_rand        = rand,
                                 )
                         self.session.add(lexeme)
-                        self.session.flush()
-                        self.add_prons(lexeme.l_lexid, sub_sec)
+
+                        # Need to flush to get id
+                        # OR generate the id without having to flush
+                        l_lexid = self.get_lexid(lexeme)
+                            
+                        self.add_prons(l_lexid, sub_sec)
+
+    def get_lexid(self, lexeme):
+        if self.from_zero:
+            self.lexid += 1
+            return self.lexid
+        else:
+            self.session.flush()
+            return lexeme.l_lexid
     
     def add_prons(self, lexeme_id, section):
         # Get list of prons
@@ -245,5 +279,4 @@ class AnagrimesDB():
                     )
             self.session.add(pron)
             p_num += 1
-        self.session.flush()
 

@@ -45,24 +45,24 @@ def read_dump(dump_path, db_con):
     
     # Store pages
     n_pages = 0
+    articles = []
     while True:
         try:
             page = next(xml.parser)
-            page_to_db(
-                    db       = db,
-                    page     = page,
-                    language = language
-                    )
+            article = generate_article(page, language)
+            if article:
+                articles.append(article)
             n_pages += 1
         except StopIteration:
             break
         if n_pages % 1000 == 0:
             pywikibot.output( u'%d pages' % n_pages )
-            db.session.commit()
+            db.add_articles(articles)
+            articles = []
     db.session.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 
-def page_to_db(db, page, language):
+def generate_article(page, language):
     # Create an article
     if page.ns == "0" and page.isredirect == False:
         text        = page.text
@@ -77,11 +77,9 @@ def page_to_db(db, page, language):
         
         # Parse article
         art.tag_sections()
-        
-        # Store the article
-        db.add_article(art)
-        
-        #art.print_sections()
+
+        return art
+    return None
 
 def main(*args):
     """
