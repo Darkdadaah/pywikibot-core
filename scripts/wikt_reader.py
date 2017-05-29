@@ -59,6 +59,7 @@ def read_dump(dump_path, db_con):
             pywikibot.output( u'%d pages' % n_pages )
             db.add_articles(articles)
             articles = []
+    db.add_articles(articles)
     db.session.commit()
     pywikibot.output( u'%d pages added or updated' % n_pages )
 

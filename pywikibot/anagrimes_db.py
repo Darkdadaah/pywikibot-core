@@ -39,8 +39,8 @@ class Article(Base, BaseEntity):
     a_title_flat_r = Column(String(255))
     a_alphagram    = Column(String(255))
 
-    errors  = relationship("Error",  back_populates='articles', cascade="all, delete, delete-orphan")
-    lexemes = relationship("Lexeme", back_populates='articles', cascade="all, delete, delete-orphan")
+    errors  = relationship("Error",  back_populates='articles', cascade="all, delete")
+    lexemes = relationship("Lexeme", back_populates='articles', cascade="all, delete")
 
 
 Index('a_title_idx',        Article.a_title,        mysql_length=15)
@@ -65,7 +65,7 @@ class Lexeme(Base, BaseEntity):
     l_sigle       = Column(String(16), index=True)
 
     articles = relationship("Article", back_populates="lexemes")
-    prons    = relationship("Pron",    back_populates='lexemes', cascade="all, delete, delete-orphan")
+    prons    = relationship("Pron",    back_populates='lexemes', cascade="all, delete")
 
 
 Index('l_lang_idx',  Lexeme.l_lang,  mysql_length=3)
@@ -181,15 +181,24 @@ class AnagrimesDB():
 
     def add_articles(self, articles):
         db = self.session
+
+        new_articles = []
+        old_articles = []
         if not self.from_zero:
             for article in articles:
-                del_art = db.query(Article).filter_by(a_artid=article.artid).all()
-                if del_art:
-                    db.delete(del_art[0])
-            db.flush()
-        for article in articles:
-            self.add_article(article)
-        db.commit()
+                artid = article.artid
+                cur_lex = db.query(Lexeme).filter_by(l_artid = artid)
+                if cur_lex:
+                    cur_lex.update({"l_artid": None})
+                    #db.flush()
+                    self.add_errors(artid, article)
+                    self.add_lexemes(artid, article)
+                else:
+                    raise Exception("Should be from zero, but found previous lexeme with artid=%d" % artid)
+        else:
+            for article in articles:
+                self.add_article(article)
+
         
     def add_article(self, article):
         db = self.session
