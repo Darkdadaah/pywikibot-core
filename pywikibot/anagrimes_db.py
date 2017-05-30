@@ -198,7 +198,7 @@ class AnagrimesDB():
         else:
             for article in articles:
                 self.add_article(article)
-
+        db.commit()
         
     def add_article(self, article):
         db = self.session
