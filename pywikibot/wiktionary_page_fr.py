@@ -30,7 +30,19 @@ class WiktArticle(WiktArticleCommon):
         @param text: text of the article
         @type text: Str
         """
+        ignore_car  = False
+        ignore_lang = []
+        ignore_type = []
         WiktArticleCommon.__init__(self, title, text, lang, artid);
+
+    def ignore_car(self):
+        self.ignore_car = True
+
+    def ignore_lang(self, ignore_list):
+        self.ignore_lang = ignore_list
+
+    def ignore_type(self, ignore_list):
+        self.ignore_type = ignore_list
      
     def rec_tag_sections(self, section):
         # FR specific section titles parsing
@@ -41,9 +53,14 @@ class WiktArticle(WiktArticleCommon):
                 name = template[0]
                 pars = template[1]
                 if name == 'langue':
+                    lang_code = pars["1"].strip()
+                    if self.ignore_car and lang_code in self.ignore_car:
+                        return
                     section.tag        = 'lang'
-                    section.attributes = { 'lang': pars["1"].strip() }
+                    section.attributes = { 'lang': lang_code }
                 elif name == u'caractère':
+                    if self.ignore_car:
+                        return
                     section.tag        = 'car'
                 else:
                     raise Exception("Not a correct language template")
@@ -51,6 +68,15 @@ class WiktArticle(WiktArticleCommon):
                 error_msg = "[[%s]] Wrong lang section: '%s'" % (self.title, section.title)
                 self.add_error('section_2', error_msg)
                 return
+            
+            # Look at the subsections (expected types)
+            lang_has_content = False
+            for sub_section in section.sub_sections:
+                type_has_content = self.rec_tag_sections(sub_section)
+                if type_has_content:
+                    lang_has_content = True
+            if lang_has_content:
+                return True
         
         if section.level == 3:
             # Extract parameters
@@ -65,6 +91,9 @@ class WiktArticle(WiktArticleCommon):
                 if (normal_sec_title):
                     section.tag = sec_type
                     if sec_type == 'type':
+                        if self.ignore_type and normal_sec_title in self.ignore_type:
+                            return False
+
                         upper_lang = section.parent.attributes['lang']
 
                         # Parse form line
@@ -76,7 +105,7 @@ class WiktArticle(WiktArticleCommon):
                         except Exception as e:
                             error_msg = "[[%s]] Can't parse form line: '%s' (%s)" % (self.title, section.title, unicode(e))
                             self.add_error('form_line', error_msg)
-                            return
+                            return False
 
                         # Parse defs lines
                         try:
@@ -126,10 +155,13 @@ class WiktArticle(WiktArticleCommon):
                 error_msg = error_msg + " (%s)" % (unicode(e))
                 self.add_error('section_3', error_msg)
                 return
-        
-        # Look at the subsections
-        for sub_section in section.sub_sections:
-            self.rec_tag_sections(sub_section)
+            
+            # Look at the subsections
+            for sub_section in section.sub_sections:
+                self.rec_tag_sections(sub_section)
+
+            # Return true if the type section is acceptable
+            return True
 
     def normalize_sec_title(self, title):
         """

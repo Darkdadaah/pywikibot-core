@@ -24,6 +24,7 @@ class WiktArticleCommon(WikiArticle):
         @param text: text of the article
         @type text: Str
         """
+        self.has_content = True
         WikiArticle.__init__(self, title, text, lang, artid)
         
     def tag_sections(self):
@@ -39,16 +40,21 @@ class WiktArticleCommon(WikiArticle):
         top = self.top_section
         
         # Then, look at the title of every section and change its tag accordingly
-        self.rec_tag_sections(top)
-       
+        self.has_content = self.rec_tag_sections(top)
+     
     def rec_tag_sections(self, section):
         if section.level == 2:
             section.tag = 'lang'
         # This is a very simple version because it can only be used generically
         # Each language will need to reimplement this
             
+        section_has_content = False
         for sub_section in section.sub_sections:
-            self.rec_tag_sections(sub_section)
+            has_content = self.rec_tag_sections(sub_section)
+            if has_content:
+                section_has_content = True
+
+        return section_has_content
     
     def normalize_sec_title(self, title):
         """

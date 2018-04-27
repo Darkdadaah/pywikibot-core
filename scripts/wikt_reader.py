@@ -50,7 +50,7 @@ def read_dump(dump_path, db_con):
         try:
             page = next(xml.parser)
             article = generate_article(page, language)
-            if article:
+            if cleanup(article):
                 articles.append(article)
             n_pages += 1
         except StopIteration:
@@ -73,14 +73,19 @@ def generate_article(page, language):
                 title = unicode(page.title),
                 text  = unicode(page.text),
                 lang  = language,
-                artid = page.id
+                artid = page.id,
                 )
+        # Ignore some things that we don't need
+        art.ignore_car()
+        art.ignore_lang([])
+        art.ignore_type(["lettre"])
         
         # Parse article
         art.tag_sections()
 
         return art
     return None
+
 
 def main(*args):
     """
